@@ -1,0 +1,1 @@
+"""StratifyAI API application."""
