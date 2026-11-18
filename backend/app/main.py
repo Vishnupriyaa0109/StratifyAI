@@ -1,4 +1,5 @@
 import os
+from datetime import datetime, timezone
 from collections import Counter
 from fastapi import Depends, FastAPI, HTTPException, Query
 from fastapi.middleware.cors import CORSMiddleware
@@ -6,13 +7,14 @@ from sqlalchemy import desc, select
 from sqlalchemy.orm import Session
 
 from .analysis import analyze_feedback
+from .analytics import compute_product_metrics
 from .database import Base, engine, get_db
-from .models import Experiment, Feedback, Opportunity
+from .models import Experiment, Feedback, Opportunity, ProductEvent
 from .schemas import (
     ExperimentCreate, ExperimentStatusUpdate, FeedbackCreate,
-    FeedbackOut, OpportunityCreate, OpportunityStatusUpdate,
+    FeedbackOut, OpportunityCreate, OpportunityStatusUpdate, ProductEventCreate,
 )
-from .seed import seed_demo_data
+from .seed import seed_demo_data, seed_product_events
 
 app = FastAPI(
     title="StratifyAI API",
@@ -35,6 +37,7 @@ def startup():
     Base.metadata.create_all(bind=engine)
     with Session(engine) as db:
         seed_demo_data(db)
+        seed_product_events(db)
 
 
 @app.get("/")
@@ -45,6 +48,82 @@ def root():
 @app.get("/health")
 def health():
     return {"status": "healthy"}
+
+
+def record_product_event(db: Session, event_name: str, properties: dict | None = None):
+    """Record an action in the local demo workspace event stream."""
+    workspace_id = "local-demo-workspace"
+    has_signup = db.scalar(
+        select(ProductEvent.id).where(
+            ProductEvent.workspace_id == workspace_id,
+            ProductEvent.event_name == "workspace_created",
+        ).limit(1)
+    )
+    now = datetime.now(timezone.utc)
+    if not has_signup:
+        db.add(ProductEvent(
+            event_name="workspace_created",
+            workspace_id=workspace_id,
+            event_properties={"source": "local_application"},
+            is_synthetic=False,
+            occurred_at=now,
+        ))
+    db.add(ProductEvent(
+        event_name=event_name,
+        workspace_id=workspace_id,
+        event_properties=properties or {},
+        is_synthetic=False,
+        occurred_at=now,
+    ))
+    db.commit()
+
+
+@app.get("/api/metrics/overview")
+def product_metrics(db: Session = Depends(get_db)):
+    """Return activation, engagement, retention, and funnel metrics."""
+    events = list(db.scalars(select(ProductEvent)))
+    return compute_product_metrics(events)
+
+
+@app.get("/api/metrics/event-taxonomy")
+def product_event_taxonomy():
+    return {
+        "events": [
+            {"name": "workspace_created", "description": "A workspace is created"},
+            {"name": "feedback_created", "description": "A feedback signal is captured"},
+            {"name": "insight_reviewed", "description": "A human reviews a suggested insight"},
+            {"name": "opportunity_created", "description": "A customer problem is added to the opportunity backlog"},
+            {"name": "opportunity_prioritized", "description": "An opportunity is promoted for planned or active work"},
+            {"name": "experiment_created", "description": "A testable product hypothesis is recorded"},
+            {"name": "experiment_completed", "description": "An experiment is marked completed"},
+            {"name": "workspace_active", "description": "A workspace performs a meaningful product action"},
+        ],
+        "required_context": ["workspace_id", "occurred_at"],
+        "optional_context": ["actor_id", "properties"],
+        "privacy_note": "Do not send names, email addresses, free-text customer feedback, or other personal data as event properties.",
+    }
+
+
+@app.post("/api/events", status_code=201)
+def ingest_product_event(payload: ProductEventCreate, db: Session = Depends(get_db)):
+    item = ProductEvent(
+        event_name=payload.event_name,
+        workspace_id=payload.workspace_id,
+        actor_id=payload.actor_id,
+        event_properties=payload.properties,
+        is_synthetic=False,
+        occurred_at=payload.occurred_at or datetime.now(timezone.utc),
+    )
+    db.add(item)
+    db.commit()
+    db.refresh(item)
+    return {
+        "id": item.id,
+        "event_name": item.event_name,
+        "workspace_id": item.workspace_id,
+        "is_synthetic": item.is_synthetic,
+        "occurred_at": item.occurred_at,
+    }
 
 
 def rice_score(item: Opportunity) -> float:
@@ -130,6 +209,7 @@ def create_feedback(payload: FeedbackCreate, db: Session = Depends(get_db)):
     db.add(item)
     db.commit()
     db.refresh(item)
+    record_product_event(db, "feedback_created", {"feedback_id": item.id, "theme": item.theme, "source": item.source})
     return item
 
 
@@ -173,6 +253,7 @@ def create_opportunity(payload: OpportunityCreate, db: Session = Depends(get_db)
     db.add(item)
     db.commit()
     db.refresh(item)
+    record_product_event(db, "opportunity_created", {"opportunity_id": item.id, "theme": item.theme})
     return opportunity_payload(item)
 
 
@@ -186,9 +267,12 @@ def update_opportunity_status(
     item = db.get(Opportunity, opportunity_id)
     if not item:
         raise HTTPException(status_code=404, detail="Opportunity not found")
+    previous_status = item.status
     item.status = payload.status
     db.commit()
     db.refresh(item)
+    if previous_status != payload.status and payload.status in {"Planned", "In progress"}:
+        record_product_event(db, "opportunity_prioritized", {"opportunity_id": item.id, "status": item.status})
     return opportunity_payload(item)
 
 
@@ -210,6 +294,7 @@ def create_experiment(payload: ExperimentCreate, db: Session = Depends(get_db)):
     db.add(item)
     db.commit()
     db.refresh(item)
+    record_product_event(db, "experiment_created", {"experiment_id": item.id})
     return {"id": item.id, **payload.model_dump(), "created_at": item.created_at}
 
 
@@ -223,9 +308,12 @@ def update_experiment_status(
     item = db.get(Experiment, experiment_id)
     if not item:
         raise HTTPException(status_code=404, detail="Experiment not found")
+    previous_status = item.status
     item.status = payload.status
     db.commit()
     db.refresh(item)
+    if previous_status != payload.status and payload.status == "Completed":
+        record_product_event(db, "experiment_completed", {"experiment_id": item.id})
     return {"id": item.id, "title": item.title, "status": item.status}
 
 
@@ -235,6 +323,8 @@ def reseed_demo_data(db: Session = Depends(get_db)):
     db.query(Feedback).delete()
     db.query(Opportunity).delete()
     db.query(Experiment).delete()
+    db.query(ProductEvent).delete()
     db.commit()
     seed_demo_data(db)
+    seed_product_events(db)
     return {"status": "reseeded", "message": "Synthetic demo data restored."}
