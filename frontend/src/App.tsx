@@ -1,9 +1,10 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
+import type { FormEvent, ReactNode } from "react";
 import {
-  Activity, ArrowDownRight, ArrowUpRight, BarChart3, Bell, BrainCircuit,
+  Activity, ArrowDownRight, ArrowUpRight, Bell, BrainCircuit,
   Check, ChevronDown, CircleHelp, Command, FlaskConical, Gauge, Lightbulb,
   MessageSquareText, Plus, RefreshCw, Search, Send, Settings2, Sparkles,
-  Target, TrendingUp, Users, Workflow, X,
+  Target, X,
 } from "lucide-react";
 import { api } from "./api";
 import type { Dashboard, Experiment, Feedback, Opportunity } from "./types";
@@ -69,7 +70,7 @@ export default function App() {
     );
   }, [feedback, query]);
 
-  async function handleFeedbackSubmit(event: React.FormEvent<HTMLFormElement>) {
+  async function handleFeedbackSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     const form = new FormData(event.currentTarget);
     try {
@@ -367,7 +368,7 @@ function ExperimentsPage({ items, onAdd, onStatus }: {
 }
 
 function Modal({ title, subtitle, onClose, children }: {
-  title: string; subtitle: string; onClose: () => void; children: React.ReactNode;
+  title: string; subtitle: string; onClose: () => void; children: ReactNode;
 }) {
   return <div className="modal-backdrop" onMouseDown={(e) => { if (e.target === e.currentTarget) onClose(); }}>
     <div className="modal"><div className="modal-heading"><div><h2>{title}</h2><p>{subtitle}</p></div><button className="icon-button" onClick={onClose} aria-label="Close"><X size={18}/></button></div>{children}</div>
