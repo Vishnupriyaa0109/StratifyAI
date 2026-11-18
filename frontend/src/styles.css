@@ -326,3 +326,7 @@ tbody tr:hover { background: #fcfcff; }
 .metric-definition-strip b{color:#5d6680}
 @media(max-width:1150px){.analytics-grid{grid-template-columns:1fr}.secondary-analytics{grid-template-columns:1fr}}
 @media(max-width:720px){.metric-window{align-self:flex-start}.funnel-row{grid-template-columns:minmax(100px,1fr) minmax(65px,1.2fr) 25px 38px;gap:7px}.funnel-step b{font-size:8px}.funnel-list{gap:15px;padding:19px 0}.retention-visual{justify-content:space-around}.northstar-number{margin:18px 0 4px}.northstar-foot{margin-top:17px}}
+
+.review-action{border:1px solid #e5e2fa;border-radius:6px;padding:6px 8px;background:#faf9ff;color:#6e61c7;font-size:8px;font-weight:700;white-space:nowrap}
+.review-action:hover:not(:disabled){background:#f0edff;border-color:#d5cff7}
+.review-action.reviewed{background:#edf8f3;border-color:#dff1e8;color:#4f9a80;cursor:default}
