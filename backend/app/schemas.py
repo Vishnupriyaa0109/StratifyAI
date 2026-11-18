@@ -60,3 +60,29 @@ class ExperimentStatusUpdate(BaseModel):
 
 class OpportunityStatusUpdate(BaseModel):
     status: str
+
+
+ALLOWED_PRODUCT_EVENTS = {
+    "workspace_created",
+    "feedback_created",
+    "insight_reviewed",
+    "opportunity_created",
+    "opportunity_prioritized",
+    "experiment_created",
+    "experiment_completed",
+    "workspace_active",
+}
+
+
+class ProductEventCreate(BaseModel):
+    event_name: str = Field(min_length=3, max_length=80)
+    workspace_id: str = Field(min_length=2, max_length=100)
+    actor_id: str | None = Field(default=None, max_length=100)
+    properties: dict = Field(default_factory=dict)
+    occurred_at: datetime | None = None
+
+    @classmethod
+    def validate_event_name(cls, value: str) -> str:
+        if value not in ALLOWED_PRODUCT_EVENTS:
+            raise ValueError(f"Unsupported event. Choose one of: {', '.join(sorted(ALLOWED_PRODUCT_EVENTS))}")
+        return value
