@@ -19,3 +19,31 @@ export type Dashboard = {
   themes: ThemeRow[]; top_opportunities: Opportunity[]; recent_feedback: Feedback[];
   data_note: string;
 };
+
+export type FunnelStage = {
+  stage: string;
+  label: string;
+  workspaces: number;
+  conversion_from_previous: number;
+  conversion_from_signup: number;
+};
+export type ProductMetrics = {
+  window_days: number;
+  cohort_workspaces: number;
+  weekly_active_workspaces: number;
+  d7_retention: {
+    eligible_workspaces: number;
+    retained_workspaces: number;
+    rate: number | null;
+  };
+  activation_rate: number;
+  north_star_workspaces: number;
+  median_time_to_first_insight_minutes: number | null;
+  funnel: FunnelStage[];
+  event_quality: {
+    synthetic_events: number;
+    observed_events: number;
+    synthetic_share: number;
+  };
+  data_note: string;
+};
