@@ -1,9 +1,8 @@
 import os
 from collections import Counter
-from datetime import datetime, timedelta, timezone
 from fastapi import Depends, FastAPI, HTTPException, Query
 from fastapi.middleware.cors import CORSMiddleware
-from sqlalchemy import desc, func, select
+from sqlalchemy import desc, select
 from sqlalchemy.orm import Session
 
 from .analysis import analyze_feedback
