@@ -20,6 +20,8 @@ export const api = {
   feedback: (search = "") => request<Feedback[]>(`/api/feedback${search ? `?search=${encodeURIComponent(search)}` : ""}`),
   addFeedback: (payload: { text: string; source: string; segment: string }) =>
     request<Feedback>("/api/feedback", { method: "POST", body: JSON.stringify(payload) }),
+  reviewFeedback: (id: number) =>
+    request<{ feedback_id: number; reviewed: boolean; new_event_recorded: boolean }>(`/api/feedback/${id}/review`, { method: "POST" }),
   opportunities: () => request<Opportunity[]>("/api/opportunities"),
   addOpportunity: (payload: Partial<Opportunity>) =>
     request<Opportunity>("/api/opportunities", { method: "POST", body: JSON.stringify(payload) }),
