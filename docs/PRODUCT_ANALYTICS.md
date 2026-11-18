@@ -32,6 +32,7 @@ Events are scoped by `workspace_id`. `actor_id` is optional. The demo avoids col
 ### Ingestion contract
 
 - `POST /api/events` accepts a whitelisted event name, workspace ID, optional actor ID, optional JSON properties, and optional event timestamp.
+- `POST /api/feedback/{id}/review` records an idempotent human review event from the feedback inbox.
 - Events are stored with a synthetic/observed provenance flag.
 - Unknown event names are rejected by request validation.
 - In the demo there is no authentication or tenant isolation; do not expose this ingestion endpoint to untrusted traffic with real data.
