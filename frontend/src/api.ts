@@ -1,4 +1,4 @@
-import type { Dashboard, Experiment, Feedback, Opportunity } from "./types";
+import type { Dashboard, Experiment, Feedback, Opportunity, ProductMetrics } from "./types";
 
 const API_BASE = import.meta.env.VITE_API_URL || "http://localhost:8000";
 
@@ -16,6 +16,7 @@ async function request<T>(path: string, options?: RequestInit): Promise<T> {
 
 export const api = {
   dashboard: () => request<Dashboard>("/api/dashboard"),
+  metrics: () => request<ProductMetrics>("/api/metrics/overview"),
   feedback: (search = "") => request<Feedback[]>(`/api/feedback${search ? `?search=${encodeURIComponent(search)}` : ""}`),
   addFeedback: (payload: { text: string; source: string; segment: string }) =>
     request<Feedback>("/api/feedback", { method: "POST", body: JSON.stringify(payload) }),
