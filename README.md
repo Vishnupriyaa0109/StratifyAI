@@ -85,6 +85,16 @@ StratifyAI/
 **Backend:** Python, FastAPI, Pydantic, SQLAlchemy  
 **Database:** SQLite for quick local development; PostgreSQL supported through `DATABASE_URL`
 
+## Run with Docker Compose
+
+Prerequisite: Docker Desktop or Docker Engine with the Compose plugin.
+
+```bash
+docker compose up --build
+```
+
+Open the frontend at http://localhost:5173 and the API docs at http://localhost:8000/docs. Compose starts PostgreSQL, the FastAPI service, and the Vite development server. The bundled database credentials are for local development only; replace them before any shared deployment.
+
 ## Run locally
 
 ### Requirements
@@ -175,6 +185,23 @@ The Postgres driver is included in `backend/requirements.txt`. SQLite is the def
 | POST | `/api/demo/reseed` | Reset the workspace to synthetic sample data |
 
 See the interactive OpenAPI documentation at `/docs` after starting the backend.
+
+## Product management case study
+
+The repository includes supporting product artefacts that make the product reasoning reviewable:
+
+- [Product brief and positioning](docs/PRODUCT_BRIEF.md)
+- [PRD and MVP scope](docs/PRD.md)
+- [Discovery plan and open assumptions](docs/DISCOVERY_PLAN.md)
+- [Proto-personas and JTBD](docs/PERSONAS_JTBD.md)
+- [User stories and acceptance criteria](docs/USER_STORIES.md)
+- [RICE prioritisation framework](docs/PRIORITIZATION.md)
+- [Metrics and experimentation framework](docs/METRICS_AND_EXPERIMENTS.md)
+- [Capability-based roadmap](docs/ROADMAP.md)
+- [Technical architecture](docs/ARCHITECTURE.md)
+- [Product decision log](docs/DECISION_LOG.md)
+
+These artefacts distinguish implemented functionality from hypotheses and future validation work.
 
 ## Product methodology
 
