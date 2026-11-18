@@ -41,6 +41,7 @@ export default function App() {
   const [showFeedbackForm, setShowFeedbackForm] = useState(false);
   const [showOpportunityForm, setShowOpportunityForm] = useState(false);
   const [showExperimentForm, setShowExperimentForm] = useState(false);
+  const [reviewedFeedbackIds, setReviewedFeedbackIds] = useState<number[]>([]);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -117,6 +118,15 @@ export default function App() {
       formElement.reset(); setShowExperimentForm(false); setToast("Experiment added.");
       await load();
     } catch (err) { setToast(err instanceof Error ? err.message : "Could not save experiment."); }
+  }
+
+  async function handleReviewFeedback(id: number) {
+    try {
+      await api.reviewFeedback(id);
+      setReviewedFeedbackIds((current) => current.includes(id) ? current : [...current, id]);
+      setToast("Insight review recorded in product analytics.");
+      await load();
+    } catch (err) { setToast(err instanceof Error ? err.message : "Could not record review."); }
   }
 
   async function updateOpportunity(id: number, status: string) {
@@ -322,14 +332,15 @@ function MetricCard({ label, value, sub, icon: Icon, color, trend }: {
   </div>;
 }
 
-function FeedbackPage({ items, query, setQuery, onAdd }: {
+function FeedbackPage({ items, query, setQuery, onAdd, reviewedIds, onReview }: {
   items: Feedback[]; query: string; setQuery: (value: string) => void; onAdd: () => void;
+  reviewedIds: number[]; onReview: (id: number) => void;
 }) {
   return <div className="view">
     <div className="page-heading"><div><div className="eyebrow"><span className="eyebrow-line"/> CUSTOMER DISCOVERY</div><h1>Feedback inbox</h1><p>Capture, categorise and inspect the voice of the customer.</p></div><button className="btn-primary" onClick={onAdd}><Plus size={16}/> Add feedback</button></div>
     <div className="filter-bar"><div className="search-field"><Search size={16}/><input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Search feedback, themes or segments…" /></div><span className="result-count">{items.length} signals</span></div>
-    <div className="panel table-panel"><div className="table-scroll"><table><thead><tr><th>CUSTOMER VOICE</th><th>THEME</th><th>SENTIMENT</th><th>SOURCE</th><th>SEGMENT</th><th>ADDED</th></tr></thead><tbody>
-      {items.map((item) => <tr key={item.id}><td className="feedback-cell"><p>{item.text}</p><small>Feedback #{String(item.id).padStart(3, "0")}</small></td><td><span className="theme-chip">{item.theme}</span></td><td><span className={`sentiment-pill ${sentimentClass(item.sentiment)}`}><i/>{item.sentiment}</span></td><td>{item.source}</td><td>{item.segment}</td><td className="muted-cell">{shortDate(item.created_at)}</td></tr>)}
+    <div className="panel table-panel"><div className="table-scroll"><table><thead><tr><th>CUSTOMER VOICE</th><th>THEME</th><th>SENTIMENT</th><th>SOURCE</th><th>SEGMENT</th><th>ADDED</th><th>INSIGHT REVIEW</th></tr></thead><tbody>
+      {items.map((item) => <tr key={item.id}><td className="feedback-cell"><p>{item.text}</p><small>Feedback #{String(item.id).padStart(3, "0")}</small></td><td><span className="theme-chip">{item.theme}</span></td><td><span className={`sentiment-pill ${sentimentClass(item.sentiment)}`}><i/>{item.sentiment}</span></td><td>{item.source}</td><td>{item.segment}</td><td className="muted-cell">{shortDate(item.created_at)}</td><td><button className={reviewedIds.includes(item.id) ? "review-action reviewed" : "review-action"} onClick={() => onReview(item.id)} disabled={reviewedIds.includes(item.id)}>{reviewedIds.includes(item.id) ? "✓ Reviewed" : "Mark reviewed"}</button></td></tr>)}
     </tbody></table>{items.length === 0 && <EmptyState text="No matching feedback. Try another search or add a new signal."/>}</div></div>
     <div className="method-note"><BrainCircuit size={16}/><div><b>How classification works</b><p>This MVP uses an explainable keyword baseline to suggest a theme and sentiment. It is intentionally transparent and should be reviewed by a human before prioritisation. It is not a trained production model.</p></div></div>
   </div>;
