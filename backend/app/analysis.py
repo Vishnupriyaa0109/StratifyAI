@@ -1,14 +1,24 @@
 """Transparent baseline feedback analysis; deliberately not presented as a trained ML model."""
 
+import re
+
 THEME_KEYWORDS = {
     "Onboarding": ["onboard", "setup", "sign up", "sign-up", "first time", "getting started", "tutorial"],
-    "Reliability": ["crash", "bug", "error", "broken", "slow", "loading", "timeout", "unavailable"],
+    "Reliability": ["crash", "broken", "slow", "loading", "bug", "error", "timeout", "unavailable"],
     "Pricing": ["price", "pricing", "expensive", "cost", "bill", "subscription", "plan", "invoice"],
     "Workflow": ["workflow", "integration", "integrate", "export", "import", "automation", "manual", "duplicate"],
     "Reporting": ["report", "dashboard", "analytics", "metric", "filter", "chart", "data"],
 }
-NEGATIVE_TERMS = {"confusing", "difficult", "hard", "slow", "broken", "crash", "bug", "error", "expensive", "missing", "frustrating", "annoying", "cannot", "can't", "failed", "fail", "issue", "problem", "unusable"}
-POSITIVE_TERMS = {"easy", "helpful", "useful", "fast", "love", "great", "excellent", "simple", "clear", "intuitive", "reliable", "saved", "amazing", "smooth"}
+NEGATIVE_TERMS = {
+    "confusing", "difficult", "hard", "slow", "broken", "crash", "crashes",
+    "crashed", "crashing", "bug", "bugs", "error", "errors", "expensive",
+    "missing", "frustrating", "annoying", "cannot", "failed", "fail", "fails",
+    "issue", "problem", "unusable", "timeout",
+}
+POSITIVE_TERMS = {
+    "easy", "helpful", "useful", "fast", "love", "great", "excellent",
+    "simple", "clear", "intuitive", "reliable", "saved", "amazing", "smooth",
+}
 
 
 def analyze_feedback(text: str) -> dict:
@@ -21,7 +31,8 @@ def analyze_feedback(text: str) -> dict:
     matched = theme_scores[best_theme]
     theme = best_theme if matched else "Other"
 
-    words = set(normalized.replace("'", "").replace("-", " ").split())
+    # Strip punctuation so sentence-final terms are still counted.
+    words = set(re.findall(r"[a-z0-9]+", normalized))
     negative = len(words & NEGATIVE_TERMS)
     positive = len(words & POSITIVE_TERMS)
     sentiment = "negative" if negative > positive else "positive" if positive > negative else "neutral"
