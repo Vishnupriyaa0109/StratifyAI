@@ -27,3 +27,11 @@ def test_unmatched_feedback_is_kept_for_review():
 def test_sentiment_tokenisation_handles_punctuation_and_word_forms():
     result = analyze_feedback("The dashboard crashes, and loading is slow.")
     assert result["sentiment"] == "negative"
+
+
+def test_rice_score_calculates_reach_impact_confidence_over_effort():
+    from types import SimpleNamespace
+    from app.main import rice_score
+
+    opportunity = SimpleNamespace(reach=80, impact=2.5, confidence=0.8, effort=3)
+    assert rice_score(opportunity) == 53.33
