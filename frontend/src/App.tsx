@@ -71,21 +71,23 @@ export default function App() {
 
   async function handleFeedbackSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    const form = new FormData(event.currentTarget);
+    const formElement = event.currentTarget;
+    const form = new FormData(formElement);
     try {
       await api.addFeedback({
         text: String(form.get("text") || ""),
         source: String(form.get("source") || "In-app"),
         segment: String(form.get("segment") || "Unknown"),
       });
-      event.currentTarget.reset(); setShowFeedbackForm(false); setToast("Feedback added and analysed.");
+      formElement.reset(); setShowFeedbackForm(false); setToast("Feedback added and analysed.");
       await load();
     } catch (err) { setToast(err instanceof Error ? err.message : "Could not save feedback."); }
   }
 
   async function handleOpportunitySubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    const form = new FormData(event.currentTarget);
+    const formElement = event.currentTarget;
+    const form = new FormData(formElement);
     try {
       await api.addOpportunity({
         title: String(form.get("title")), problem_statement: String(form.get("problem_statement")),
@@ -93,14 +95,15 @@ export default function App() {
         impact: Number(form.get("impact")), confidence: Number(form.get("confidence")),
         effort: Number(form.get("effort")), status: "Candidate",
       });
-      event.currentTarget.reset(); setShowOpportunityForm(false); setToast("Opportunity added to the backlog.");
+      formElement.reset(); setShowOpportunityForm(false); setToast("Opportunity added to the backlog.");
       await load();
     } catch (err) { setToast(err instanceof Error ? err.message : "Could not save opportunity."); }
   }
 
   async function handleExperimentSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    const form = new FormData(event.currentTarget);
+    const formElement = event.currentTarget;
+    const form = new FormData(formElement);
     try {
       await api.addExperiment({
         title: String(form.get("title")), hypothesis: String(form.get("hypothesis")),
@@ -109,7 +112,7 @@ export default function App() {
         target_value: form.get("target_value") ? Number(form.get("target_value")) : null,
         status: "Planned",
       });
-      event.currentTarget.reset(); setShowExperimentForm(false); setToast("Experiment added.");
+      formElement.reset(); setShowExperimentForm(false); setToast("Experiment added.");
       await load();
     } catch (err) { setToast(err instanceof Error ? err.message : "Could not save experiment."); }
   }
