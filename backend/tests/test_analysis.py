@@ -35,3 +35,58 @@ def test_rice_score_calculates_reach_impact_confidence_over_effort():
 
     opportunity = SimpleNamespace(reach=80, impact=2.5, confidence=0.8, effort=3)
     assert rice_score(opportunity) == 53.33
+
+
+from datetime import datetime, timedelta, timezone
+from types import SimpleNamespace
+from app.analytics import compute_product_metrics
+
+
+def test_activation_funnel_uses_distinct_workspaces_and_calculates_rates():
+    now = datetime(2026, 11, 18, 12, tzinfo=timezone.utc)
+    events = [
+        SimpleNamespace(event_name="workspace_created", workspace_id="w1", occurred_at=now - timedelta(days=20), is_synthetic=True),
+        SimpleNamespace(event_name="feedback_created", workspace_id="w1", occurred_at=now - timedelta(days=19), is_synthetic=True),
+        SimpleNamespace(event_name="insight_reviewed", workspace_id="w1", occurred_at=now - timedelta(days=18), is_synthetic=True),
+        SimpleNamespace(event_name="opportunity_created", workspace_id="w1", occurred_at=now - timedelta(days=17), is_synthetic=True),
+        SimpleNamespace(event_name="workspace_created", workspace_id="w2", occurred_at=now - timedelta(days=9), is_synthetic=True),
+        SimpleNamespace(event_name="feedback_created", workspace_id="w2", occurred_at=now - timedelta(days=8), is_synthetic=True),
+        SimpleNamespace(event_name="workspace_active", workspace_id="w2", occurred_at=now - timedelta(days=1), is_synthetic=True),
+        # Duplicate event must not increase the number of converted workspaces.
+        SimpleNamespace(event_name="feedback_created", workspace_id="w1", occurred_at=now - timedelta(days=18), is_synthetic=True),
+    ]
+
+    result = compute_product_metrics(events, now=now)
+    assert result["cohort_workspaces"] == 2
+    assert result["funnel"][1]["workspaces"] == 2
+    assert result["funnel"][2]["workspaces"] == 1
+    assert result["activation_rate"] == 50.0
+    assert result["weekly_active_workspaces"] == 1
+    assert result["north_star_workspaces"] == 1
+
+
+def test_d7_retention_uses_only_matured_signup_cohorts():
+    now = datetime(2026, 11, 18, 12, tzinfo=timezone.utc)
+    events = [
+        SimpleNamespace(event_name="workspace_created", workspace_id="retained", occurred_at=now - timedelta(days=20), is_synthetic=True),
+        SimpleNamespace(event_name="workspace_active", workspace_id="retained", occurred_at=now - timedelta(days=11), is_synthetic=True),
+        SimpleNamespace(event_name="workspace_created", workspace_id="churned", occurred_at=now - timedelta(days=20), is_synthetic=True),
+        SimpleNamespace(event_name="workspace_created", workspace_id="too_new", occurred_at=now - timedelta(days=9), is_synthetic=True),
+    ]
+
+    result = compute_product_metrics(events, now=now)
+    assert result["d7_retention"]["eligible_workspaces"] == 2
+    assert result["d7_retention"]["retained_workspaces"] == 1
+    assert result["d7_retention"]["rate"] == 50.0
+
+
+def test_metric_output_labels_synthetic_data():
+    now = datetime(2026, 11, 18, 12, tzinfo=timezone.utc)
+    events = [
+        SimpleNamespace(event_name="workspace_created", workspace_id="demo", occurred_at=now - timedelta(days=2), is_synthetic=True),
+        SimpleNamespace(event_name="workspace_active", workspace_id="demo", occurred_at=now - timedelta(days=1), is_synthetic=False),
+    ]
+    result = compute_product_metrics(events, now=now)
+    assert result["event_quality"]["synthetic_events"] == 1
+    assert result["event_quality"]["observed_events"] == 1
+    assert "synthetic" in result["data_note"].lower()
