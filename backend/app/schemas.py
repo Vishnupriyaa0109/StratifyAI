@@ -1,5 +1,5 @@
 from datetime import datetime
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 
 class FeedbackCreate(BaseModel):
@@ -81,6 +81,7 @@ class ProductEventCreate(BaseModel):
     properties: dict = Field(default_factory=dict)
     occurred_at: datetime | None = None
 
+    @field_validator("event_name")
     @classmethod
     def validate_event_name(cls, value: str) -> str:
         if value not in ALLOWED_PRODUCT_EVENTS:
