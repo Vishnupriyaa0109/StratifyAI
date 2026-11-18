@@ -1,19 +1,20 @@
 import { useCallback, useEffect, useMemo, useState, type FormEvent, type ReactNode } from "react";
 import {
-  Activity, ArrowDownRight, ArrowUpRight, Bell, BrainCircuit,
+  Activity, ArrowDownRight, ArrowUpRight, BarChart3, Bell, BrainCircuit,
   Check, ChevronDown, CircleHelp, Command, FlaskConical, Gauge, Lightbulb,
   MessageSquareText, Plus, RefreshCw, Search, Send, Settings2, Sparkles,
   Target, X,
 } from "lucide-react";
 import { api } from "./api";
-import type { Dashboard, Experiment, Feedback, Opportunity } from "./types";
+import type { Dashboard, Experiment, Feedback, Opportunity, ProductMetrics } from "./types";
 
-type Page = "Overview" | "Feedback" | "Opportunities" | "Experiments";
+type Page = "Overview" | "Feedback" | "Opportunities" | "Experiments" | "Metrics";
 const navigation: { label: Page; icon: typeof Gauge; hint: string }[] = [
   { label: "Overview", icon: Gauge, hint: "Workspace pulse" },
   { label: "Feedback", icon: MessageSquareText, hint: "Voice of customer" },
   { label: "Opportunities", icon: Lightbulb, hint: "Prioritisation" },
   { label: "Experiments", icon: FlaskConical, hint: "Learn & iterate" },
+  { label: "Metrics", icon: BarChart3, hint: "Growth analytics" },
 ];
 
 function initials(value: string) {
@@ -32,6 +33,7 @@ export default function App() {
   const [feedback, setFeedback] = useState<Feedback[]>([]);
   const [opportunities, setOpportunities] = useState<Opportunity[]>([]);
   const [experiments, setExperiments] = useState<Experiment[]>([]);
+  const [metrics, setMetrics] = useState<ProductMetrics | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [toast, setToast] = useState("");
@@ -44,10 +46,10 @@ export default function App() {
     setLoading(true);
     setError("");
     try {
-      const [d, f, o, e] = await Promise.all([
-        api.dashboard(), api.feedback(), api.opportunities(), api.experiments(),
+      const [d, f, o, e, m] = await Promise.all([
+        api.dashboard(), api.feedback(), api.opportunities(), api.experiments(), api.metrics(),
       ]);
-      setDashboard(d); setFeedback(f); setOpportunities(o); setExperiments(e);
+      setDashboard(d); setFeedback(f); setOpportunities(o); setExperiments(e); setMetrics(m);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Could not connect to the API.");
     } finally {
@@ -187,6 +189,7 @@ export default function App() {
               {page === "Feedback" && <FeedbackPage items={filteredFeedback} query={query} setQuery={setQuery} onAdd={() => setShowFeedbackForm(true)}/>}
               {page === "Opportunities" && <OpportunitiesPage items={opportunities} onAdd={() => setShowOpportunityForm(true)} onStatus={updateOpportunity}/>}
               {page === "Experiments" && <ExperimentsPage items={experiments} onAdd={() => setShowExperimentForm(true)} onStatus={updateExperiment}/>}
+              {page === "Metrics" && metrics && <MetricsPage metrics={metrics}/>} 
             </>
           )}
         </div>
@@ -366,6 +369,70 @@ function ExperimentsPage({ items, onAdd, onStatus }: {
     </div>
     {items.length === 0 && <div className="panel"><EmptyState text="No experiments yet. Add a hypothesis and success metric to start learning."/></div>}
     <div className="method-note"><FlaskConical size={16}/><div><b>Experiment discipline</b><p>Before running a test, define eligibility, sample size, guardrail metrics, decision threshold and duration. This tracker records plans and status; it does not claim statistical significance or calculate causal lift.</p></div></div>
+  </div>;
+}
+
+
+
+function MetricsPage({ metrics }: { metrics: ProductMetrics }) {
+  const maxFunnel = Math.max(1, ...metrics.funnel.map((item) => item.workspaces));
+  const medianMinutes = metrics.median_time_to_first_insight_minutes;
+  const formatDuration = (minutes: number | null) => {
+    if (minutes === null) return "—";
+    if (minutes < 60) return `${Math.round(minutes)}m`;
+    if (minutes < 1440) return `${(minutes / 60).toFixed(1)}h`;
+    return `${(minutes / 1440).toFixed(1)}d`;
+  };
+  return <div className="view">
+    <div className="page-heading">
+      <div><div className="eyebrow"><span className="eyebrow-line"/> PRODUCT ANALYTICS</div><h1>Metrics & growth</h1><p>Measure the journey from workspace creation to customer value and product learning.</p></div>
+      <div className="metric-window"><Activity size={14}/> Last {metrics.window_days} days</div>
+    </div>
+    <div className="analytics-demo-banner"><Sparkles size={16}/><div><b>Simulated portfolio dataset</b><span>{metrics.data_note}</span></div></div>
+    <section className="metric-grid analytics-metric-grid">
+      <MetricCard label="Activation rate" value={`${metrics.activation_rate.toFixed(1)}%`} sub="Workspaces that reviewed an insight" icon={Target} color="violet" trend="Aha moment"/>
+      <MetricCard label="Weekly active workspaces" value={String(metrics.weekly_active_workspaces)} sub="Unique workspaces active in 7 days" icon={Users} color="green" trend="Engagement"/>
+      <MetricCard label="D7 retention" value={metrics.d7_retention.rate === null ? "N/A" : `${metrics.d7_retention.rate.toFixed(1)}%`} sub={`${metrics.d7_retention.retained_workspaces} / ${metrics.d7_retention.eligible_workspaces} matured cohorts`} icon={TrendingUp} color="amber" trend="Retention"/>
+      <MetricCard label="Time to first insight" value={formatDuration(medianMinutes)} sub="Median signup-to-review duration" icon={Activity} color="rose" trend="Time to value"/>
+    </section>
+    <section className="analytics-grid">
+      <div className="panel funnel-panel">
+        <div className="panel-heading"><div><span className="section-kicker">CONVERSION FUNNEL</span><h2>From signup to experiment</h2><p>Distinct workspaces reaching each milestone</p></div><span className="funnel-cohort">{metrics.cohort_workspaces} signups</span></div>
+        <div className="funnel-list">
+          {metrics.funnel.map((item, index) => <div className="funnel-row" key={item.stage}>
+            <div className="funnel-step"><span>{String(index + 1).padStart(2, "0")}</span><b>{item.label}</b></div>
+            <div className="funnel-track"><div style={{width: `${(item.workspaces / maxFunnel) * 100}%`}}/></div>
+            <strong>{item.workspaces}</strong>
+            <small>{item.conversion_from_signup.toFixed(1)}%</small>
+          </div>)}
+        </div>
+        <div className="funnel-legend"><span>Stage count</span><span>Conversion from signup</span></div>
+      </div>
+      <div className="panel northstar-panel">
+        <div className="panel-heading"><div><span className="section-kicker">NORTH STAR PROXY</span><h2>Evidence-linked decisions</h2><p>Workspaces with a reviewed insight and an opportunity</p></div><div className="pulse-icon"><Target size={17}/></div></div>
+        <div className="northstar-number">{metrics.north_star_workspaces}<small>workspaces</small></div>
+        <div className="northstar-copy">This proxy represents the core value loop: customer signals become reviewed insights, then product opportunities.</div>
+        <div className="northstar-foot"><span>Core value progression</span><b>{metrics.cohort_workspaces ? (metrics.north_star_workspaces / metrics.cohort_workspaces * 100).toFixed(1) : "0.0"}% of signup cohort</b></div>
+      </div>
+    </section>
+    <section className="analytics-grid secondary-analytics">
+      <div className="panel">
+        <div className="panel-heading"><div><span className="section-kicker">RETENTION COHORT</span><h2>Day-7 return behaviour</h2><p>Only cohorts with a complete 14-day observation window</p></div></div>
+        <div className="retention-visual">
+          <div className="retention-ring"><div><strong>{metrics.d7_retention.rate === null ? "—" : `${metrics.d7_retention.rate.toFixed(0)}%`}</strong><small>D7 RETENTION</small></div></div>
+          <div className="retention-stats"><div><span>Retained workspaces</span><b>{metrics.d7_retention.retained_workspaces}</b></div><div><span>Eligible cohort</span><b>{metrics.d7_retention.eligible_workspaces}</b></div><div><span>Not retained</span><b>{Math.max(0, metrics.d7_retention.eligible_workspaces - metrics.d7_retention.retained_workspaces)}</b></div></div>
+        </div>
+        <div className="method-note"><TrendingUp size={16}/><div><b>Why mature cohorts?</b><p>New signups are excluded until they have had a full 14-day observation window. This avoids treating not-yet-eligible users as churned.</p></div></div>
+      </div>
+      <div className="panel event-quality-panel">
+        <div className="panel-heading"><div><span className="section-kicker">INSTRUMENTATION HEALTH</span><h2>Event data quality</h2><p>Provenance is part of the metric</p></div><div className="pulse-icon"><Workflow size={17}/></div></div>
+        <div className="quality-number">{metrics.event_quality.synthetic_share.toFixed(1)}%<small>synthetic event share</small></div>
+        <div className="quality-bar"><div style={{width: `${metrics.event_quality.synthetic_share}%`}}/></div>
+        <div className="quality-counts"><div><span className="quality-dot synthetic-dot"/>Synthetic events<b>{metrics.event_quality.synthetic_events}</b></div><div><span className="quality-dot observed-dot"/>Observed events<b>{metrics.event_quality.observed_events}</b></div></div>
+        <div className="method-note"><BrainCircuit size={16}/><div><b>Do not mix evidence types</b><p>Seeded sample events are flagged in storage. Real application interactions and ingested events are counted separately in the provenance summary.</p></div></div>
+      </div>
+    </section>
+    <div className="metric-definition-strip"><b>Metric definitions:</b> Activation = workspaces with an insight_reviewed event ÷ workspaces created in the 30-day cohort. D7 retention = eligible workspaces active between days 7 and 14 ÷ matured signup cohort. WAU = distinct workspaces with a meaningful event in the trailing 7 days.</div>
   </div>;
 }
 
