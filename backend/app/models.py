@@ -1,5 +1,5 @@
 from datetime import datetime, timezone
-from sqlalchemy import DateTime, Float, Integer, String, Text
+from sqlalchemy import DateTime, Float, Integer, JSON, String, Text
 from sqlalchemy.orm import Mapped, mapped_column
 from .database import Base
 
@@ -44,3 +44,15 @@ class Experiment(Base):
     status: Mapped[str] = mapped_column(String(30), default="Planned")
     owner: Mapped[str] = mapped_column(String(100), default="Product")
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
+
+
+class ProductEvent(Base):
+    """Append-only product event used for the metrics layer."""
+    __tablename__ = "product_events"
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
+    event_name: Mapped[str] = mapped_column(String(80), index=True)
+    workspace_id: Mapped[str] = mapped_column(String(100), index=True)
+    actor_id: Mapped[str | None] = mapped_column(String(100), nullable=True, index=True)
+    event_properties: Mapped[dict] = mapped_column(JSON, default=dict)
+    occurred_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow, index=True)
+    received_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
