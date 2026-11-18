@@ -196,7 +196,7 @@ export default function App() {
           {loading && !dashboard ? <div className="loading-state"><div className="loader"/><p>Connecting to your product workspace…</p></div> : (
             <>
               {page === "Overview" && dashboard && <Overview dashboard={dashboard} onNavigate={setPage} onAddFeedback={() => setShowFeedbackForm(true)} onReset={resetDemo}/>}
-              {page === "Feedback" && <FeedbackPage items={filteredFeedback} query={query} setQuery={setQuery} onAdd={() => setShowFeedbackForm(true)}/>}
+              {page === "Feedback" && <FeedbackPage items={filteredFeedback} query={query} setQuery={setQuery} onAdd={() => setShowFeedbackForm(true)} reviewedIds={reviewedFeedbackIds} onReview={handleReviewFeedback}/>}
               {page === "Opportunities" && <OpportunitiesPage items={opportunities} onAdd={() => setShowOpportunityForm(true)} onStatus={updateOpportunity}/>}
               {page === "Experiments" && <ExperimentsPage items={experiments} onAdd={() => setShowExperimentForm(true)} onStatus={updateExperiment}/>}
               {page === "Metrics" && metrics && <MetricsPage metrics={metrics}/>} 
