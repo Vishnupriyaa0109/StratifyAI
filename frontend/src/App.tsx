@@ -419,7 +419,7 @@ function MetricsPage({ metrics }: { metrics: ProductMetrics }) {
       <div className="panel">
         <div className="panel-heading"><div><span className="section-kicker">RETENTION COHORT</span><h2>Day-7 return behaviour</h2><p>Only cohorts with a complete 14-day observation window</p></div></div>
         <div className="retention-visual">
-          <div className="retention-ring"><div><strong>{metrics.d7_retention.rate === null ? "—" : `${metrics.d7_retention.rate.toFixed(0)}%`}</strong><small>D7 RETENTION</small></div></div>
+          <div className="retention-ring" style={{background: `conic-gradient(#8174dc 0 ${metrics.d7_retention.rate ?? 0}%, #eeeff5 ${metrics.d7_retention.rate ?? 0}% 100%)`}}><div><strong>{metrics.d7_retention.rate === null ? "—" : `${metrics.d7_retention.rate.toFixed(0)}%`}</strong><small>D7 RETENTION</small></div></div>
           <div className="retention-stats"><div><span>Retained workspaces</span><b>{metrics.d7_retention.retained_workspaces}</b></div><div><span>Eligible cohort</span><b>{metrics.d7_retention.eligible_workspaces}</b></div><div><span>Not retained</span><b>{Math.max(0, metrics.d7_retention.eligible_workspaces - metrics.d7_retention.retained_workspaces)}</b></div></div>
         </div>
         <div className="method-note"><TrendingUp size={16}/><div><b>Why mature cohorts?</b><p>New signups are excluded until they have had a full 14-day observation window. This avoids treating not-yet-eligible users as churned.</p></div></div>
