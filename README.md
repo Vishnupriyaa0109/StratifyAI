@@ -291,3 +291,33 @@ Issues and pull requests are welcome. For substantial changes, describe the user
 *From Customer Voices to Confident Product Decisions.*
 
 Built as a product-management and full-stack engineering portfolio project.
+
+
+## Optional: run with Docker Compose
+
+The standard local setup above uses SQLite and does not require Docker. An optional Compose setup is also included for a PostgreSQL-backed local stack:
+
+```bash
+docker compose up --build
+```
+
+Open the frontend at http://localhost:5173 and the API documentation at http://localhost:8000/docs. Stop the stack with `docker compose down`. To remove the local PostgreSQL volume and its data as well, use `docker compose down -v`.
+
+The Compose database password is a development-only placeholder. Do not reuse it outside a local environment. If Docker is unavailable or its daemon is not running, use the SQLite quick-start instructions instead.
+
+## Repository guide
+
+- [Product brief](docs/PRODUCT_BRIEF.md) — vision, scope, user/problem hypotheses, product principles.
+- [Personas and JTBD](docs/PERSONAS_JTBD.md) — proto-personas and jobs to be validated.
+- [PRD](docs/PRD.md) — functional and non-functional requirements with acceptance criteria.
+- [User stories](docs/USER_STORIES.md) — core workflows and acceptance criteria.
+- [Discovery plan](docs/DISCOVERY_PLAN.md) — interview guide, prototype tasks, and synthesis approach.
+- [Prioritisation framework](docs/PRIORITIZATION.md) — RICE scoring guidance and guardrails.
+- [Metrics and experiments](docs/METRICS_AND_EXPERIMENTS.md) — north-star hypothesis, metric tree, and experiment template.
+- [Roadmap](docs/ROADMAP.md) — Now / Next / Later delivery plan.
+- [Architecture](docs/ARCHITECTURE.md) — application components, data model, configuration, and technical limits.
+- [Decision log](docs/DECISION_LOG.md) — product and engineering trade-offs.
+
+## Continuous integration
+
+GitHub Actions runs the backend test suite and frontend production build on pushes and pull requests to `main`. See [the workflow](.github/workflows/ci.yml) and the [Actions tab](../../actions).
