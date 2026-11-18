@@ -184,6 +184,7 @@ The Postgres driver is included in `backend/requirements.txt`. SQLite is the def
 | GET | `/api/metrics/overview` | Activation, WAU, D7 retention, funnel, time to insight, event provenance |
 | GET | `/api/metrics/event-taxonomy` | Supported event names and context contract |
 | POST | `/api/events` | Ingest a whitelisted product event |
+| POST | `/api/feedback/{id}/review` | Record a human review and emit an activation event |
 | GET | `/api/experiments` | List experiments |
 | POST | `/api/experiments` | Create an experiment |
 | PATCH | `/api/experiments/{id}/status` | Update experiment status |
