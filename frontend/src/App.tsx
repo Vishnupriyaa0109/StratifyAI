@@ -3,7 +3,7 @@ import {
   Activity, ArrowDownRight, ArrowUpRight, BarChart3, Bell, BrainCircuit,
   Check, ChevronDown, CircleHelp, Command, FlaskConical, Gauge, Lightbulb,
   MessageSquareText, Plus, RefreshCw, Search, Send, Settings2, Sparkles,
-  Target, X,
+  Target, TrendingUp, Users, Workflow, X,
 } from "lucide-react";
 import { api } from "./api";
 import type { Dashboard, Experiment, Feedback, Opportunity, ProductMetrics } from "./types";
