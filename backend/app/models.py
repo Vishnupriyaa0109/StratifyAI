@@ -1,5 +1,5 @@
 from datetime import datetime, timezone
-from sqlalchemy import DateTime, Float, Integer, JSON, String, Text
+from sqlalchemy import Boolean, DateTime, Float, Integer, JSON, String, Text
 from sqlalchemy.orm import Mapped, mapped_column
 from .database import Base
 
@@ -54,5 +54,6 @@ class ProductEvent(Base):
     workspace_id: Mapped[str] = mapped_column(String(100), index=True)
     actor_id: Mapped[str | None] = mapped_column(String(100), nullable=True, index=True)
     event_properties: Mapped[dict] = mapped_column(JSON, default=dict)
+    is_synthetic: Mapped[bool] = mapped_column(Boolean, default=False, index=True)
     occurred_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow, index=True)
     received_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
