@@ -1,5 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
-import type { FormEvent, ReactNode } from "react";
+import { useCallback, useEffect, useMemo, useState, type FormEvent, type ReactNode } from "react";
 import {
   Activity, ArrowDownRight, ArrowUpRight, Bell, BrainCircuit,
   Check, ChevronDown, CircleHelp, Command, FlaskConical, Gauge, Lightbulb,
@@ -84,7 +83,7 @@ export default function App() {
     } catch (err) { setToast(err instanceof Error ? err.message : "Could not save feedback."); }
   }
 
-  async function handleOpportunitySubmit(event: React.FormEvent<HTMLFormElement>) {
+  async function handleOpportunitySubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     const form = new FormData(event.currentTarget);
     try {
@@ -99,7 +98,7 @@ export default function App() {
     } catch (err) { setToast(err instanceof Error ? err.message : "Could not save opportunity."); }
   }
 
-  async function handleExperimentSubmit(event: React.FormEvent<HTMLFormElement>) {
+  async function handleExperimentSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     const form = new FormData(event.currentTarget);
     try {
