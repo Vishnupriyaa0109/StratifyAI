@@ -213,6 +213,33 @@ def create_feedback(payload: FeedbackCreate, db: Session = Depends(get_db)):
     return item
 
 
+
+
+@app.post("/api/feedback/{feedback_id}/review")
+def review_feedback_insight(feedback_id: int, db: Session = Depends(get_db)):
+    """Record a human review of a suggested feedback insight; repeated requests are idempotent."""
+    item = db.get(Feedback, feedback_id)
+    if not item:
+        raise HTTPException(status_code=404, detail="Feedback not found")
+
+    workspace_id = "local-demo-workspace"
+    existing_events = list(db.scalars(select(ProductEvent).where(
+        ProductEvent.workspace_id == workspace_id,
+        ProductEvent.event_name == "insight_reviewed",
+    )))
+    already_reviewed = any(
+        (event.event_properties or {}).get("feedback_id") == item.id
+        for event in existing_events
+    )
+    if not already_reviewed:
+        record_product_event(db, "insight_reviewed", {
+            "feedback_id": item.id,
+            "theme": item.theme,
+            "review_outcome": "accepted",
+        })
+    return {"feedback_id": item.id, "reviewed": True, "new_event_recorded": not already_reviewed}
+
+
 @app.get("/api/feedback/{feedback_id}/analysis")
 def feedback_analysis(feedback_id: int, db: Session = Depends(get_db)):
     item = db.get(Feedback, feedback_id)
