@@ -90,3 +90,19 @@ def test_metric_output_labels_synthetic_data():
     assert result["event_quality"]["synthetic_events"] == 1
     assert result["event_quality"]["observed_events"] == 1
     assert "synthetic" in result["data_note"].lower()
+
+
+def test_product_event_schema_rejects_unknown_event_names():
+    import pytest
+    from pydantic import ValidationError
+    from app.schemas import ProductEventCreate
+
+    with pytest.raises(ValidationError):
+        ProductEventCreate(event_name="random_event", workspace_id="workspace-1")
+
+    valid = ProductEventCreate(
+        event_name="insight_reviewed",
+        workspace_id="workspace-1",
+        properties={"review_outcome": "accepted"},
+    )
+    assert valid.event_name == "insight_reviewed"
