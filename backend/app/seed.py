@@ -1,6 +1,7 @@
+from datetime import datetime, timedelta, timezone
 from sqlalchemy import select
 from sqlalchemy.orm import Session
-from .models import Feedback, Opportunity, Experiment
+from .models import Feedback, Opportunity, Experiment, ProductEvent
 from .analysis import analyze_feedback
 
 DEMO_FEEDBACK = [
@@ -50,4 +51,51 @@ def seed_demo_data(db: Session):
         db.add(Opportunity(title=title, problem_statement=problem, theme=theme, reach=reach, impact=impact, confidence=confidence, effort=effort, status=status))
     for title, hypothesis, metric, baseline, target, status, owner in DEMO_EXPERIMENTS:
         db.add(Experiment(title=title, hypothesis=hypothesis, success_metric=metric, baseline_value=baseline, target_value=target, status=status, owner=owner))
+    db.commit()
+
+
+
+def seed_product_events(db: Session):
+    """Create deterministic synthetic events for metrics exploration; safe to call repeatedly."""
+    if db.scalar(select(ProductEvent.id).limit(1)) is not None:
+        return
+
+    now = datetime.now(timezone.utc)
+    events = []
+
+    def add(name, workspace, occurred_at, **properties):
+        events.append(ProductEvent(
+            event_name=name,
+            workspace_id=workspace,
+            event_properties=properties,
+            is_synthetic=True,
+            occurred_at=occurred_at,
+        ))
+
+    # 80 synthetic signups across the last 8–28 days create a small cohort dataset.
+    for index in range(80):
+        workspace = f"demo-workspace-{index + 1:03d}"
+        signup_at = now - timedelta(days=8 + (index % 21), hours=index % 24)
+        add("workspace_created", workspace, signup_at, acquisition_channel=["Organic", "Referral", "Content"][index % 3])
+
+        if index < 68:
+            add("feedback_created", workspace, signup_at + timedelta(hours=2, minutes=index % 60), source="Synthetic")
+        if index < 48:
+            add("insight_reviewed", workspace, signup_at + timedelta(days=1, hours=index % 5), review_outcome="accepted" if index % 4 else "edited")
+        if index < 35:
+            add("opportunity_created", workspace, signup_at + timedelta(days=2, hours=index % 4), opportunity_type="customer_problem")
+        if index < 24:
+            add("experiment_created", workspace, signup_at + timedelta(days=3, hours=index % 6), experiment_type="prototype")
+        if index < 14:
+            add("experiment_completed", workspace, signup_at + timedelta(days=8, hours=index % 3), outcome="illustrative_only")
+
+        # Day-7 retention event for a deterministic subset of eligible workspaces.
+        if signup_at <= now - timedelta(days=14) and index % 5 != 0:
+            add("workspace_active", workspace, signup_at + timedelta(days=9), surface="metrics_demo")
+
+        # Recent activity provides a weekly-active sample independent of cohort age.
+        if index < 28:
+            add("workspace_active", workspace, now - timedelta(days=index % 7, hours=index % 4), surface="product_demo")
+
+    db.add_all(events)
     db.commit()
