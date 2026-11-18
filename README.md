@@ -32,6 +32,7 @@ StratifyAI brings these steps into one inspectable workflow, keeping the link be
 | Experiment tracker | Create hypotheses, define success metrics and optional baseline/target values, update status |
 | Demo workspace | Seeded synthetic examples and a reset-to-demo action |
 | API | FastAPI endpoints with SQLAlchemy persistence |
+| Product analytics | Event ingestion, action instrumentation, activation funnel, WAU, matured D7 retention, time-to-first-insight, and event provenance |
 | Frontend | Responsive React + TypeScript + Vite application |
 
 ### What is not claimed as implemented
@@ -68,11 +69,12 @@ StratifyAI/
 ├── backend/
 │   ├── app/
 │   │   ├── analysis.py      # Explainable keyword baseline
+│   │   ├── analytics.py     # Activation, funnel and cohort metrics
 │   │   ├── database.py      # SQLAlchemy engine/session
 │   │   ├── main.py          # FastAPI routes
-│   │   ├── models.py        # Feedback/opportunity/experiment models
+│   │   ├── models.py        # Feedback/opportunity/experiment/event models
 │   │   ├── schemas.py       # Request validation
-│   │   └── seed.py          # Synthetic demo dataset
+│   │   └── seed.py          # Synthetic demo dataset and product events
 │   ├── tests/
 │   │   └── test_analysis.py
 │   ├── requirements.txt
@@ -179,6 +181,9 @@ The Postgres driver is included in `backend/requirements.txt`. SQLite is the def
 | GET | `/api/opportunities` | List opportunities ordered by RICE |
 | POST | `/api/opportunities` | Create an opportunity |
 | PATCH | `/api/opportunities/{id}/status` | Update opportunity status |
+| GET | `/api/metrics/overview` | Activation, WAU, D7 retention, funnel, time to insight, event provenance |
+| GET | `/api/metrics/event-taxonomy` | Supported event names and context contract |
+| POST | `/api/events` | Ingest a whitelisted product event |
 | GET | `/api/experiments` | List experiments |
 | POST | `/api/experiments` | Create an experiment |
 | PATCH | `/api/experiments/{id}/status` | Update experiment status |
@@ -321,3 +326,10 @@ The Compose database password is a development-only placeholder. Do not reuse it
 ## Continuous integration
 
 GitHub Actions runs the backend test suite and frontend production build on pushes and pull requests to `main`. See [the workflow](.github/workflows/ci.yml) and the [Actions tab](../../actions).
+
+
+## Product analytics and business metrics
+
+The Metrics view adds a small event-driven product analytics layer. Core product actions emit events, `POST /api/events` supports whitelisted event ingestion, and `GET /api/metrics/overview` calculates workspace-level activation, funnel conversion, weekly active workspaces, matured D7 retention, median time to first insight, and an evidence-linked decision proxy. The event-quality panel distinguishes seeded synthetic events from observed application events.
+
+Metric formulas, event definitions, cohort rules, data-quality checks, and business decisions the metrics could inform are documented in [Product Analytics & Business Metrics](docs/PRODUCT_ANALYTICS.md). All preloaded event data is synthetic; the dashboard is an implementation demonstration, not a claim of customer or commercial results.
